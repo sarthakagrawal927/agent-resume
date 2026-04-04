@@ -490,17 +490,12 @@ Task: ${prompt}"
 }
 
 # ============================================================================
-# Core: Smart Routing + Cascade on Rate Limit
+# Core: Optimistic Routing + Cascade on Rate Limit
 # ============================================================================
 #
-# Default behavior (routing):
-#   Find the best available agent (highest tier, installed, not rate-limited)
-#   and run the task on it.
-#
-# On rate limit (cascade):
-#   Walk down the cascade order trying each agent until one works.
-#
-# --no-cascade: only try the routed agent, fail if rate-limited.
+# No probing. Just run the top-tier agent immediately.
+# If it's rate limited, cascade to the next installed agent.
+# Zero startup delay in the common case.
 
 run_once() {
   # Test mode
@@ -509,7 +504,6 @@ run_once() {
     info "[test] Simulating rate limit, resets in ${TEST_SECS}s"
     countdown "$fake_ts"
     sleep "$BUFFER_SECS"
-    # Run on first available agent after simulated wait
     while IFS= read -r entry; do
       is_installed "$entry" || continue
       run_agent "$entry" "$PROMPT"
@@ -518,9 +512,8 @@ run_once() {
     die "No agents available"
   fi
 
-  # Build cascade order
+  # Build cascade order (installed agents only)
   local cascade_entries=()
-  local first_status=""
   while IFS= read -r entry; do
     is_installed "$entry" || continue
     cascade_entries+=("$entry")
@@ -528,59 +521,46 @@ run_once() {
 
   [ ${#cascade_entries[@]} -eq 0 ] && die "No AI agents installed. Install claude, gemini, codex, copilot, or aider."
 
-  # Step 1: Route to best available agent
-  info "Finding best available agent..."
+  local last_status=""
+
   for entry in "${cascade_entries[@]}"; do
     local name tier
     name=$(reg_name "$entry")
     tier=$(reg_tier "$entry")
-    debug "Checking $name..."
 
-    start_spinner "Probing $name [T${tier}]..."
-    local status
-    status=$(probe_agent "$entry")
-    debug "$name: $status"
-    log_event "PROBE: $name=$status"
+    info "Running on $name [T${tier}]..."
+    log_event "TRY: $name"
 
-    # Save first status for wait_for_reset
-    [ -z "$first_status" ] && first_status="$status"
+    run_agent "$entry" "$PROMPT"
+    local ret=$?
 
-    if [ "$status" = "ok" ]; then
-      stop_spinner "✓ $name [T${tier}] — available"
-      info "Routing to $name"
-      run_agent "$entry" "$PROMPT"
-      local ret=$?
+    # Success — done
+    [ $ret -ne $RATE_LIMIT_EXIT ] && return $ret
 
-      # If it hit rate limit DURING execution, cascade to next
-      if [ $ret -eq $RATE_LIMIT_EXIT ] && [ "$CASCADE" = true ]; then
-        info "$name hit rate limit during execution. Cascading..."
-        continue
-      fi
-      return $ret
-    fi
+    # Rate limited — cascade or wait
+    log_event "RATE_LIMITED: $name"
 
-    # Rate limited — cascade if enabled
-    if [ "$CASCADE" = true ]; then
-      stop_spinner "✗ $name [T${tier}] — rate limited"
-      info "$name is rate limited. Trying next..."
-      continue
-    else
-      stop_spinner "✗ $name [T${tier}] — rate limited"
-      info "$name is rate limited. Cascade disabled (--no-cascade)."
-      wait_for_reset "$status"
+    if [ "$CASCADE" != true ]; then
+      info "$name hit rate limit. Cascade disabled (--no-cascade)."
+      # Probe to get reset timestamp
+      start_spinner "Checking rate limit reset time..."
+      last_status=$(probe_agent "$entry")
+      stop_spinner
+      wait_for_reset "$last_status"
       run_agent "$entry" "$PROMPT"
       return $?
     fi
+
+    info "$name hit rate limit. Cascading..."
+
+    # Probe to capture reset timestamp for later
+    last_status=$(probe_agent "$entry" 2>/dev/null) || last_status="limited"
   done
 
-  # All agents exhausted
+  # All agents exhausted — wait for first one to come back
   info "All installed agents are rate limited."
   log_event "ALL_LIMITED"
-
-  # Wait for reset using first agent's status (most likely to have a timestamp)
-  wait_for_reset "${first_status:-limited}"
-
-  # After wait, try the first agent again
+  wait_for_reset "${last_status:-limited}"
   run_agent "${cascade_entries[0]}" "$PROMPT"
 }
 
@@ -592,30 +572,46 @@ show_status() {
   echo "agent-resume v$VERSION — status"
   echo ""
 
-  while IFS= read -r entry; do
-    local name cli
-    name=$(reg_name "$entry")
-    cli=$(reg_cli "$entry")
-    local tier
-    tier=$(reg_tier "$entry")
+  # Collect installed agents and probe in parallel
+  local entries=() names=() tiers=() clis=()
+  local probe_dir
+  probe_dir=$(mktemp -d)
+  local idx=0
 
-    if ! command -v "$cli" &>/dev/null; then
-      printf "  [T%s] %-16s %s\n" "$tier" "$name" "not installed"
+  while IFS= read -r entry; do
+    entries+=("$entry")
+    names+=($(reg_name "$entry"))
+    tiers+=($(reg_tier "$entry"))
+    clis+=($(reg_cli "$entry"))
+
+    if command -v "$(reg_cli "$entry")" &>/dev/null; then
+      ( probe_agent "$entry" > "$probe_dir/$idx" ) &
+    fi
+    idx=$((idx + 1))
+  done < <(get_cascade_order)
+
+  start_spinner "Probing ${#entries[@]} agents..."
+  wait 2>/dev/null || true
+  stop_spinner
+
+  for i in "${!entries[@]}"; do
+    if ! command -v "${clis[$i]}" &>/dev/null; then
+      printf "  [T%s] %-16s %s\n" "${tiers[$i]}" "${names[$i]}" "not installed"
       continue
     fi
 
-    start_spinner "[T${tier}] ${name} — probing..."
     local status
-    status=$(probe_agent "$entry")
-    stop_spinner
+    status=$(cat "$probe_dir/$i" 2>/dev/null || echo "limited")
     if [ "$status" = "ok" ]; then
-      printf "  [T%s] %-16s %s\n" "$tier" "$name" "✓ available"
+      printf "  [T%s] %-16s %s\n" "${tiers[$i]}" "${names[$i]}" "✓ available"
     elif [[ "$status" == limited\|* ]]; then
-      printf "  [T%s] %-16s %s\n" "$tier" "$name" "✗ limited — resets $(fmt_time "${status#limited|}")"
+      printf "  [T%s] %-16s %s\n" "${tiers[$i]}" "${names[$i]}" "✗ limited — resets $(fmt_time "${status#limited|}")"
     else
-      printf "  [T%s] %-16s %s\n" "$tier" "$name" "✗ limited"
+      printf "  [T%s] %-16s %s\n" "${tiers[$i]}" "${names[$i]}" "✗ limited"
     fi
-  done < <(get_cascade_order)
+  done
+
+  rm -rf "$probe_dir"
 
   echo ""
   printf "  %-20s " "cli-continues"
