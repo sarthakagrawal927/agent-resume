@@ -474,6 +474,10 @@ Task: ${prompt}"
   local ret=${PIPESTATUS[0]}
   set -e
 
+  # Reset terminal state — agent output escape codes can garble the terminal
+  stty sane 2>/dev/null || true
+  printf '\033[0m' 2>/dev/null || true
+
   if is_agent_rate_limited "$(cat "$tmpfile")" "$entry"; then
     log_event "RATE_LIMITED: $name during execution"
     rm -f "$tmpfile"
@@ -788,6 +792,21 @@ done
 if [ "$SUBCOMMAND" = "delegate" ]; then
   delegate_to_agent "$DELEGATE_AGENT" "$DELEGATE_TASK"
   exit $?
+fi
+
+# Require a prompt or -c flag — don't silently send "continue" to a random agent
+if [ -z "$SUBCOMMAND" ] && [ "$PROMPT" = "continue" ] && [ "$CONTINUE" = false ] && [ -z "$RESUME_SESSION" ]; then
+  cat >&2 <<'USAGE'
+Error: No prompt provided.
+
+Usage:
+  agent-resume -c "fix the auth bug"
+  agent-resume --loop -c "get test coverage to 80%"
+  agent-resume status
+
+Run 'agent-resume --help' for all options.
+USAGE
+  exit 1
 fi
 
 [ -n "$LOG_FILE" ] && log_event "SESSION_START: v$VERSION"
