@@ -1,5 +1,7 @@
 # agent-resume
 
+**Status: Feature Complete / Archived**
+
 Auto-resume AI coding agents through rate limits. Unified cascade across Claude, Gemini, Codex, Copilot, and Aider — ordered by quality tier, with per-agent rate limit detection.
 
 One shell script. Zero required dependencies. macOS-first. 93 tests passing.
@@ -9,6 +11,8 @@ agent-resume --loop -c "finish the refactor"
 ```
 
 Smart routing finds the best available agent. When it hits a rate limit, it cascades to the next: Opus → Gemini → Sonnet → Codex → Haiku → Copilot → Aider → wait → retry. You walk away, it keeps working.
+
+> **Note:** This project is feature-complete for its headless/overnight automation use case. The interactive cascade use case needs a fundamentally different architecture — see [Limitations](#limitations) and [Why a Desktop App is Better](#why-a-desktop-app-is-better).
 
 ---
 
@@ -161,6 +165,48 @@ agent-resume -c -- --worktree myfeature --name "overnight-refactor"
 
 ---
 
+## Limitations
+
+This project works well for headless/overnight automation, but be honest about what it can't do:
+
+### Headless mode kills the agent UX
+
+The CLI wrapper approach runs every agent in headless `-p` mode. That means no interactive file diffs, no permission prompts, no conversation flow. You're trading the agent's best feature (interactive collaboration) for automation. This is fine for "run overnight and check in the morning" but bad for anything where you'd want to steer the agent mid-task.
+
+### No context handoff between agents
+
+When agent-resume cascades mid-task (e.g., Opus hits a limit, switches to Gemini), the next agent starts from scratch with just the same prompt. There's no transfer of what the previous agent learned, what files it was editing, or what decisions it made. Each agent re-discovers the codebase independently.
+
+### Probing is slow
+
+Even with parallel/optimistic routing, probing agents takes real time. These CLIs weren't designed to be health-checked — a "probe" is just a lightweight prompt execution. With multiple agents, the startup latency is noticeable.
+
+### Rate limit detection is fragile
+
+Detection depends on parsing stderr/stdout text for specific strings (`RESOURCE_EXHAUSTED`, `usage limit reached`, etc.). If any agent changes their error message format, detection breaks silently. There's no stable API for "am I rate limited?" — it's all regex on human-readable output.
+
+### Only useful for headless automation
+
+If you're sitting at your terminal and want to interactively develop with the best available agent, this tool doesn't help. It's designed for fire-and-forget: queue a task, walk away, check results later.
+
+---
+
+## Why a Desktop App is Better
+
+Building this project surfaced an architectural insight: the CLI wrapper approach hits a ceiling. The interactive cascade use case needs a fundamentally different architecture.
+
+**A daemon/desktop app can watch a real interactive session** — instead of wrapping the CLI in headless mode, a background process can monitor an active terminal session and detect rate limits without taking over the agent's UX.
+
+**Native notifications with action buttons** — instead of silently cascading, a desktop app can show a macOS notification: "Claude hit rate limit. Switch to Gemini?" with Yes/No buttons. The user stays in control.
+
+**Context injection across agents** — a desktop app can capture the conversation state, file changes, and decisions from the rate-limited session and inject them as context into the next agent. No more starting from scratch.
+
+**Each agent keeps its native terminal experience** — no headless mode. You get interactive diffs, permission prompts, and conversation flow exactly as the agent intended.
+
+**This is the direction the project is heading.** The cascade logic belongs in a desktop app (like [CodeVetter](https://github.com/sarthakagrawal927/codevetter)) that can orchestrate agents without degrading their UX. agent-resume proved the concept; a desktop app is the right delivery mechanism.
+
+---
+
 ## Installation
 
 ```bash
@@ -261,6 +307,14 @@ bash test.sh
 
 ---
 
+## What Makes agent-resume Different (and Where It Falls Short)
+
+Every other tool in this space is Claude-specific. agent-resume treats **all AI coding agents as equal participants** in a unified quality-tiered cascade. Claude's native `--fallback-model` only handles overload (not rate limits), and only within Claude models. We cascade across vendors.
+
+That said, the CLI wrapper approach has a hard ceiling. Wrapping interactive agents in headless mode strips away their best features. The unified cascade concept is sound, but the right implementation is a background daemon that monitors real sessions — not a script that takes over the terminal. See [Why a Desktop App is Better](#why-a-desktop-app-is-better).
+
+---
+
 ## Inspiration & Prior Art
 
 Built from scratch after evaluating the Claude Code automation ecosystem:
@@ -270,17 +324,6 @@ Built from scratch after evaluating the Claude Code automation ecosystem:
 - **[claude-squad](https://github.com/smtg-ai/claude-squad)** — model/session diversity as a resilience strategy
 - **[continuous-claude](https://github.com/AnandChowdhary/continuous-claude)** — task queues, `caffeinate` for overnight runs, cost tracking via `stream-json`
 - **[Claude-Autopilot](https://github.com/benbasha/Claude-Autopilot)** — delegation results flowing as context between tasks
-
-### What makes agent-resume different
-
-Every tool above is Claude-specific. agent-resume treats **all AI coding agents as equal participants** in a unified quality-tiered cascade. Claude's native `--fallback-model` only handles overload (not rate limits), and only within Claude models. We cascade across vendors.
-
----
-
-## Roadmap
-
-- [ ] **Completion signals** — detect when the agent says "done" and stop the loop
-- [ ] **Homebrew formula** — `brew install agent-resume`
 
 ---
 
