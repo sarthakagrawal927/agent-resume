@@ -45,13 +45,13 @@ USER_ORDER=()
 # Default order interleaves vendors by quality tier.
 
 AGENT_REGISTRY=(
-  "1|claude-opus|claude|claude --model opus -p check|--model opus -p|usage limit reached|limit reached.*resets|hit your limit|out of.*(extra )?usage|rate.?limit"
-  "1|gemini|gemini|gemini -p check|-p|rate limit|quota exceeded|resource.?exhausted|429|too many requests"
-  "2|claude-sonnet|claude|claude --model sonnet -p check|--model sonnet -p|usage limit reached|limit reached.*resets|hit your limit|out of.*(extra )?usage|rate.?limit"
-  "2|codex|codex|codex -p check|-p|rate limit|429|too many requests|quota exceeded"
-  "3|claude-haiku|claude|claude --model haiku -p check|--model haiku -p|usage limit reached|limit reached.*resets|hit your limit|out of.*(extra )?usage|rate.?limit"
-  "3|copilot|copilot|copilot --prompt check|--prompt|rate limit|429|too many requests"
-  "3|aider|aider|aider --message check|--message|rate limit|429|too many requests"
+  "1|claude-opus|claude|claude --model opus -p check|--model opus -p|usage limit.*reached|limit reached.*resets|hit your limit|out of.*(extra )?usage|rate.?limit"
+  "1|gemini|gemini|gemini -p check|-p|RESOURCE_EXHAUSTED|RATE_LIMIT_EXCEEDED|QUOTA_EXHAUSTED|exhausted.*quota|quota.*exceeded|rate.?limit.*exceeded|429"
+  "2|claude-sonnet|claude|claude --model sonnet -p check|--model sonnet -p|usage limit.*reached|limit reached.*resets|hit your limit|out of.*(extra )?usage|rate.?limit"
+  "2|codex|codex|codex --version|exec|exceeded retry limit.*429|rate_limit_exceeded|429 Too Many|insufficient_quota"
+  "3|claude-haiku|claude|claude --model haiku -p check|--model haiku -p|usage limit.*reached|limit reached.*resets|hit your limit|out of.*(extra )?usage|rate.?limit"
+  "3|copilot|copilot|copilot --version|-p|rate_limited|you.ve exceeded|you have been rate-limited|Copilot token usage"
+  "3|aider|aider|aider --version|--message --yes|RateLimitError|Retrying in [0-9]|rate_limit_error|429.*Too Many|exceeded.*quota"
 )
 
 # ============================================================================
