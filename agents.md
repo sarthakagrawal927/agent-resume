@@ -1,22 +1,28 @@
-# claude-resume — Agent Context
+# agent-resume — Agent Context
 
 ## What this project is
-A shell script that auto-resumes Claude Code after rate limits, with model cascading and cross-agent fallback.
+A shell script that auto-resumes AI coding agents through rate limits with a unified quality-tiered cascade across Claude, Gemini, Codex, Copilot, and Aider.
 
 ## Architecture
-- Single Bash script (`claude-resume.sh`)
+- Single Bash script (`agent-resume.sh`)
 - macOS-first (BSD date, no GNU timeout dependency)
-- Optional integration with cli-continues (`npx continues`) for cross-agent context handoff
-- Zero required external dependencies
+- Agent registry: each agent has tier, CLI binary, probe command, headless flag, and rate limit patterns
+- Smart routing by default (best available), cascade on rate limit
+- Optional: cli-continues for interactive cross-agent context handoff
+
+## Agent Registry Format
+```
+"tier|name|cli_cmd|probe_cmd|headless_flag|rate_limit_patterns..."
+```
 
 ## Key patterns
-- `run_with_timeout` — cross-platform timeout (gtimeout → timeout → pure shell fallback)
-- `parse_reset_time` — handles 3 known Claude output formats for rate limit messages
-- Model cascade: Opus → Sonnet → Haiku before falling back to another agent
-- Background countdown + macOS notification via osascript
+- `run_timeout` — cross-platform timeout (gtimeout → timeout → pure shell)
+- `probe_agent` — check if agent is available and not rate-limited
+- `run_agent` — execute on any registered agent with proper flag mapping
+- `get_cascade_order` — user-defined or default tier-sorted order
+- `parse_reset_time` — handles 3 Claude output formats for countdown
 
 ## Conventions
-- Keep it under 300 lines
-- No unnecessary error messages or verbose output
 - Functions return via stdout, errors to stderr
-- Exit codes: 0=success, 1=error, 2=parse failure, 3=network error, 130=interrupted
+- Exit codes: 0=success, 1=error, 2=rate limited during execution
+- Agent registry is the single source of truth for all agent metadata
