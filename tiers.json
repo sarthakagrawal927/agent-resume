@@ -5,13 +5,13 @@
   "agents": [
     {
       "tier": 1,
-      "name": "claude-opus",
-      "cli": "claude",
-      "probe": "claude --model opus -p check",
-      "headless": "--model opus -p",
-      "patterns": "usage limit.*reached|limit reached.*resets|hit your limit|out of.*(extra )?usage|rate.?limit",
-      "score": 72.0,
-      "benchmark_model": "claude-opus-4-20250514"
+      "name": "codex",
+      "cli": "codex",
+      "probe": "codex --version",
+      "headless": "exec",
+      "patterns": "exceeded retry limit.*429|rate_limit_exceeded|429 Too Many|insufficient_quota",
+      "score": 88.0,
+      "benchmark_model": "gpt-5 (high)"
     },
     {
       "tier": 1,
@@ -25,6 +25,16 @@
     },
     {
       "tier": 2,
+      "name": "claude-opus",
+      "cli": "claude",
+      "probe": "claude --model opus -p check",
+      "headless": "--model opus -p",
+      "patterns": "usage limit.*reached|limit reached.*resets|hit your limit|out of.*(extra )?usage|rate.?limit",
+      "score": 72.0,
+      "benchmark_model": "claude-opus-4-20250514"
+    },
+    {
+      "tier": 2,
       "name": "claude-sonnet",
       "cli": "claude",
       "probe": "claude --model sonnet -p check",
@@ -32,16 +42,6 @@
       "patterns": "usage limit.*reached|limit reached.*resets|hit your limit|out of.*(extra )?usage|rate.?limit",
       "score": 64.9,
       "benchmark_model": "claude-3-7-sonnet-20250219"
-    },
-    {
-      "tier": 2,
-      "name": "codex",
-      "cli": "codex",
-      "probe": "codex --version",
-      "headless": "exec",
-      "patterns": "exceeded retry limit.*429|rate_limit_exceeded|429 Too Many|insufficient_quota",
-      "score": 52.4,
-      "benchmark_model": "gpt-4.1"
     },
     {
       "tier": 3,
