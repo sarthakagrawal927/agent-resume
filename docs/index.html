@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>claude-resume - Auto-resume Claude Code through rate limits</title>
-  <meta name="description" content="Auto-resume Claude Code through rate limits with intelligent model cascading, exhaustive cross-agent fallback, inter-agent delegation, and long-running task queues.">
+  <title>agent-resume - Auto-resume AI coding agents through rate limits</title>
+  <meta name="description" content="Auto-resume AI coding agents through rate limits with unified cascade routing across Claude, Gemini, Codex, Copilot, and Aider. Smart routing by default, cascading on rate limit.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -741,6 +741,12 @@
       border: 1px solid rgba(210, 153, 34, 0.2);
     }
 
+    .tag.tier {
+      color: var(--accent-cyan);
+      background: rgba(88, 166, 255, 0.1);
+      border: 1px solid rgba(88, 166, 255, 0.2);
+    }
+
     /* Inspiration */
     .inspiration {
       background: var(--bg-primary);
@@ -923,7 +929,7 @@
 <body>
 
   <!-- GitHub Corner -->
-  <a href="https://github.com/sarthakagrawal927/claude-resume" class="github-corner" aria-label="View source on GitHub" target="_blank" rel="noopener">
+  <a href="https://github.com/sarthakagrawal927/agent-resume" class="github-corner" aria-label="View source on GitHub" target="_blank" rel="noopener">
     <svg width="72" height="72" viewBox="0 0 250 250" aria-hidden="true">
       <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
       <path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin:130px 106px;" class="octo-arm"></path>
@@ -934,7 +940,7 @@
   <!-- Navigation -->
   <nav id="nav">
     <div class="nav-inner">
-      <a href="#" class="nav-logo">claude<span>-</span>resume</a>
+      <a href="#" class="nav-logo">agent<span>-</span>resume</a>
       <ul class="nav-links" id="navLinks">
         <li><a href="#features">Features</a></li>
         <li><a href="#install">Install</a></li>
@@ -954,16 +960,16 @@
       <div class="hero-content">
         <div class="hero-text">
           <div class="hero-badges">
-            <span class="badge green">v1.2.0</span>
+            <span class="badge green">v2.0.0</span>
             <span class="badge">Shell Script</span>
             <span class="badge">Zero Dependencies</span>
             <span class="badge">macOS-first</span>
           </div>
-          <h1>claude<span class="green">-</span>resume</h1>
-          <p class="hero-tagline">Auto-resume Claude Code through rate limits with intelligent model cascading, exhaustive agent fallback, sleep prevention, and task queues.</p>
+          <h1>agent<span class="green">-</span>resume</h1>
+          <p class="hero-tagline">Auto-resume AI coding agents through rate limits. Unified cascade across Claude, Gemini, Codex, Copilot, and Aider. Smart routing by default, cascading on rate limit.</p>
           <div class="hero-cta">
             <a href="#install" class="btn btn-primary">Get Started</a>
-            <a href="https://github.com/sarthakagrawal927/claude-resume" class="btn btn-secondary" target="_blank" rel="noopener">View on GitHub</a>
+            <a href="https://github.com/sarthakagrawal927/agent-resume" class="btn btn-secondary" target="_blank" rel="noopener">View on GitHub</a>
           </div>
         </div>
         <div class="hero-terminal">
@@ -972,7 +978,7 @@
               <span class="terminal-dot red"></span>
               <span class="terminal-dot yellow"></span>
               <span class="terminal-dot green"></span>
-              <span class="terminal-title">claude-resume</span>
+              <span class="terminal-title">agent-resume</span>
             </div>
             <div class="terminal-body" id="heroTerminal">
               <!-- Lines injected by JS -->
@@ -989,56 +995,62 @@
       <div class="features-header">
         <p class="section-label">Features</p>
         <h2 class="section-title">Everything you need to stay unblocked</h2>
-        <p class="section-desc">One shell script handles rate limits, model switching, exhaustive agent fallback, sleep prevention, and task orchestration. You walk away, it keeps working.</p>
+        <p class="section-desc">One shell script handles smart routing, unified cascading, per-agent rate limit detection, sleep prevention, and task orchestration across every major AI coding agent.</p>
       </div>
       <div class="features-grid">
         <div class="feature-card fade-in">
-          <div class="feature-icon">&#x23F1;</div>
-          <h3>Rate Limit Detection</h3>
-          <p>Parses 6+ known Claude output formats for rate limit timestamps. Live countdown timer with macOS native notifications when the limit lifts.</p>
-          <span class="feature-tag">core</span>
+          <div class="feature-icon">&#x1F9ED;</div>
+          <h3>Smart Routing</h3>
+          <p>Probes all installed agents on startup and routes your task to the best available one by quality tier. No configuration needed &mdash; it just picks the best agent that is not rate-limited.</p>
+          <span class="feature-tag">default behavior</span>
         </div>
         <div class="feature-card fade-in">
           <div class="feature-icon cyan">&#x21C5;</div>
-          <h3>Model Cascading</h3>
-          <p>When Opus is rate-limited, automatically try Sonnet, then Haiku. Your task continues on the first available model, transparently.</p>
-          <span class="feature-tag">Opus &rarr; Sonnet &rarr; Haiku</span>
+          <h3>Unified Cascade</h3>
+          <p>One cascade across ALL agents, ordered by quality tier. When your primary agent hits a rate limit mid-task, it automatically cascades to the next available agent in the registry.</p>
+          <span class="feature-tag">T1 &rarr; T2 &rarr; T3</span>
         </div>
         <div class="feature-card fade-in">
-          <div class="feature-icon purple">&#x1F310;</div>
-          <h3>Exhaustive Agent Fallback</h3>
-          <p>All Claude models gone? Automatically loops through every installed agent &mdash; Gemini, Codex, Copilot, Aider &mdash; until one succeeds. No manual configuration needed.</p>
-          <span class="feature-tag">gemini / codex / copilot / aider</span>
+          <div class="feature-icon purple">&#x1F3AF;</div>
+          <h3>Quality Tiers</h3>
+          <p>Agents are ranked by quality: T1 (Claude Opus, Gemini), T2 (Claude Sonnet, Codex), T3 (Claude Haiku, Copilot, Aider). The best available tier always runs first.</p>
+          <span class="feature-tag">7 agents across 3 tiers</span>
         </div>
         <div class="feature-card fade-in">
-          <div class="feature-icon yellow">&#x1F4E4;</div>
-          <h3>Inter-Agent Delegation</h3>
-          <p>Run tasks on other AIs headlessly and inject results as context into Claude. Gemini fetches data, Claude processes it.</p>
-          <span class="feature-tag">delegate:agent</span>
+          <div class="feature-icon yellow">&#x1F50D;</div>
+          <h3>Per-Agent Rate Limit Detection</h3>
+          <p>Each agent has its own rate limit patterns. Gemini: RESOURCE_EXHAUSTED/429. Codex: exceeded retry limit. Copilot: rate_limited. Aider: RateLimitError. All detected automatically.</p>
+          <span class="feature-tag">agent-specific patterns</span>
         </div>
         <div class="feature-card fade-in">
-          <div class="feature-icon orange">&#x1F4CB;</div>
-          <h3>Task Queues</h3>
-          <p>Process markdown task files sequentially with full rate-limit resilience. Completed tasks are skipped on re-run. Walk away, come back to everything done.</p>
-          <span class="feature-tag">- [ ] / - [x]</span>
+          <div class="feature-icon orange">&#x1F527;</div>
+          <h3>Custom Ordering</h3>
+          <p>Override the default tier order with <code style="font-family:var(--font-mono); font-size:12px;">--order gemini,claude-opus,codex</code>. Define your own cascade priority to match your workflow and subscription tiers.</p>
+          <span class="feature-tag">--order a,b,c</span>
         </div>
         <div class="feature-card fade-in">
           <div class="feature-icon">&#x1F501;</div>
           <h3>Loop Mode</h3>
-          <p>Keep retrying through repeated rate limits until the task succeeds. Essential for long autonomous runs that hit limits multiple times.</p>
+          <p>Keep retrying through ALL agents until the task succeeds. Essential for long autonomous runs that hit multiple rate limits across different providers.</p>
           <span class="feature-tag">--loop</span>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="feature-icon cyan">&#x1F4E4;</div>
+          <h3>Inter-Agent Delegation</h3>
+          <p>Run tasks on specific agents headlessly and inject results as context into the next task. Gemini fetches data, Claude processes it &mdash; all orchestrated automatically.</p>
+          <span class="feature-tag">delegate:agent</span>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="feature-icon purple">&#x1F4CB;</div>
+          <h3>Task Queues</h3>
+          <p>Process markdown task files sequentially with full rate-limit resilience and cross-agent delegation. Completed tasks are skipped on re-run. Walk away, come back to everything done.</p>
+          <span class="feature-tag">- [ ] / - [x]</span>
         </div>
         <div class="feature-card fade-in">
           <div class="feature-icon red">&#x1F6E1;</div>
           <h3>Permission Modes</h3>
-          <p>Choose your security level with <code style="font-family:var(--font-mono); font-size:12px;">--permission-mode</code>: auto, acceptEdits, or bypassPermissions. Safer than the old all-or-nothing skip-permissions flag.</p>
+          <p>Choose your security level with <code style="font-family:var(--font-mono); font-size:12px;">--permission-mode</code>: auto, acceptEdits, or bypassPermissions. Fine-grained control for unattended operation.</p>
           <span class="feature-tag">--permission-mode auto</span>
-        </div>
-        <div class="feature-card fade-in">
-          <div class="feature-icon cyan">&#x27A1;</div>
-          <h3>Flag Pass-Through</h3>
-          <p>Forward any extra flags directly to the Claude CLI using <code style="font-family:var(--font-mono); font-size:12px;">--</code>. Pass worktree options, verbose flags, or anything else Claude supports.</p>
-          <span class="feature-tag">-- &lt;flags&gt;</span>
         </div>
         <div class="feature-card fade-in">
           <div class="feature-icon yellow">&#x2615;</div>
@@ -1047,21 +1059,15 @@
           <span class="feature-tag">caffeinate</span>
         </div>
         <div class="feature-card fade-in">
-          <div class="feature-icon orange">&#x1F9F9;</div>
-          <h3>Signal Handling</h3>
-          <p>Proper cleanup on exit via trap handlers. Kills caffeinate, logs session end, and preserves exit codes on SIGINT, SIGTERM, and normal exit.</p>
-          <span class="feature-tag">trap cleanup EXIT</span>
+          <div class="feature-icon orange">&#x1F4CA;</div>
+          <h3>Status Dashboard</h3>
+          <p>Run <code style="font-family:var(--font-mono); font-size:12px;">agent-resume status</code> to see every agent, its tier, installation status, and whether it is available or rate-limited right now.</p>
+          <span class="feature-tag">agent-resume status</span>
         </div>
         <div class="feature-card fade-in">
-          <div class="feature-icon cyan">&#x1F4CA;</div>
-          <h3>Status &amp; Debug</h3>
-          <p>See model check results, parsed timestamps, cascade decisions, and fallback attempts. Full visibility into what is happening under the hood.</p>
-          <span class="feature-tag">DEBUG=1</span>
-        </div>
-        <div class="feature-card fade-in">
-          <div class="feature-icon purple">&#x1F4DD;</div>
+          <div class="feature-icon cyan">&#x1F4DD;</div>
           <h3>Event Logging</h3>
-          <p>Log every rate limit hit, cascade decision, agent fallback, and session boundary to a file. Trace exactly what happened during long autonomous runs.</p>
+          <p>Log every probe, route decision, rate limit hit, cascade step, and session boundary to a file. Full audit trail for long autonomous runs.</p>
           <span class="feature-tag">--log events.log</span>
         </div>
       </div>
@@ -1079,15 +1085,17 @@
           <div style="margin-top:24px;">
             <h3 style="font-size:15px; margin-bottom:8px;">Requirements</h3>
             <ul style="list-style:none; display:flex; flex-direction:column; gap:6px;">
-              <li style="color:var(--text-secondary); font-size:14px;"><span style="color:var(--accent-green); margin-right:8px;">&#x2713;</span>Claude Code CLI (<code style="font-family:var(--font-mono); color:var(--accent-cyan); font-size:13px;">claude</code>)</li>
               <li style="color:var(--text-secondary); font-size:14px;"><span style="color:var(--accent-green); margin-right:8px;">&#x2713;</span>Bash 3+ (ships with macOS)</li>
+              <li style="color:var(--text-secondary); font-size:14px;"><span style="color:var(--accent-green); margin-right:8px;">&#x2713;</span>At least one AI agent CLI installed</li>
+            </ul>
+            <h3 style="font-size:15px; margin-bottom:8px; margin-top:20px;">Supported Agents</h3>
+            <ul style="list-style:none; display:flex; flex-direction:column; gap:6px;">
+              <li style="color:var(--text-secondary); font-size:14px;"><span style="color:var(--accent-green); margin-right:8px;">T1</span>Claude Opus (<code style="font-family:var(--font-mono); color:var(--accent-cyan); font-size:13px;">claude</code>), Gemini (<code style="font-family:var(--font-mono); color:var(--accent-cyan); font-size:13px;">gemini</code>)</li>
+              <li style="color:var(--text-secondary); font-size:14px;"><span style="color:var(--accent-yellow); margin-right:8px;">T2</span>Claude Sonnet (<code style="font-family:var(--font-mono); color:var(--accent-cyan); font-size:13px;">claude</code>), Codex (<code style="font-family:var(--font-mono); color:var(--accent-cyan); font-size:13px;">codex</code>)</li>
+              <li style="color:var(--text-secondary); font-size:14px;"><span style="color:var(--accent-orange); margin-right:8px;">T3</span>Claude Haiku (<code style="font-family:var(--font-mono); color:var(--accent-cyan); font-size:13px;">claude</code>), Copilot (<code style="font-family:var(--font-mono); color:var(--accent-cyan); font-size:13px;">copilot</code>), Aider (<code style="font-family:var(--font-mono); color:var(--accent-cyan); font-size:13px;">aider</code>)</li>
             </ul>
             <h3 style="font-size:15px; margin-bottom:8px; margin-top:20px;">Optional</h3>
             <ul style="list-style:none; display:flex; flex-direction:column; gap:6px;">
-              <li style="color:var(--text-secondary); font-size:14px;"><span style="color:var(--text-muted); margin-right:8px;">&#x25CB;</span>Gemini CLI &mdash; fallback / delegation target</li>
-              <li style="color:var(--text-secondary); font-size:14px;"><span style="color:var(--text-muted); margin-right:8px;">&#x25CB;</span>Codex CLI &mdash; fallback / delegation target</li>
-              <li style="color:var(--text-secondary); font-size:14px;"><span style="color:var(--text-muted); margin-right:8px;">&#x25CB;</span>Copilot CLI &mdash; fallback / delegation target</li>
-              <li style="color:var(--text-secondary); font-size:14px;"><span style="color:var(--text-muted); margin-right:8px;">&#x25CB;</span>Aider &mdash; fallback / delegation target</li>
               <li style="color:var(--text-secondary); font-size:14px;"><span style="color:var(--text-muted); margin-right:8px;">&#x25CB;</span>cli-continues &mdash; interactive cross-agent handoff</li>
             </ul>
           </div>
@@ -1099,22 +1107,22 @@
               <button class="copy-btn" onclick="copyCode(this, 'install-code')">Copy</button>
             </div>
             <pre id="install-code"><span class="comment"># Clone</span>
-git clone https://github.com/sarthakagrawal927/claude-resume.git
-cd claude-resume
+git clone https://github.com/sarthakagrawal927/agent-resume.git
+cd agent-resume
 
 <span class="comment"># Make executable</span>
-chmod +x claude-resume.sh
+chmod +x agent-resume.sh
 
 <span class="comment"># Symlink to PATH</span>
-ln -s "$(pwd)/claude-resume.sh" /usr/local/bin/claude-resume</pre>
+ln -s "$(pwd)/agent-resume.sh" /usr/local/bin/agent-resume</pre>
           </div>
           <div class="code-block">
             <div class="code-block-header">
               <span class="code-block-label">Verify</span>
               <button class="copy-btn" onclick="copyCode(this, 'verify-code')">Copy</button>
             </div>
-            <pre id="verify-code">claude-resume --version
-claude-resume --help</pre>
+            <pre id="verify-code">agent-resume --version
+agent-resume status</pre>
           </div>
         </div>
       </div>
@@ -1131,100 +1139,98 @@ claude-resume --help</pre>
       <div class="usage-examples">
         <div class="usage-example fade-in">
           <div class="usage-example-text">
-            <h3>Resume after rate limit</h3>
-            <p>The simplest use case. Detects the rate limit, counts down, and resumes your conversation automatically. Model cascade kicks in if your primary model is still limited.</p>
+            <h3>Smart route to best agent</h3>
+            <p>The default behavior. Probes all installed agents, routes to the best available one by quality tier, and cascades to the next if it gets rate-limited mid-task.</p>
           </div>
           <div class="code-block">
             <div class="code-block-header">
               <span class="code-block-label">Terminal</span>
               <button class="copy-btn" onclick="copyCode(this, 'ex1')">Copy</button>
             </div>
-            <pre id="ex1">claude-resume -c</pre>
+            <pre id="ex1">agent-resume -c</pre>
           </div>
         </div>
         <div class="usage-example fade-in">
           <div class="usage-example-text">
             <h3>Long autonomous task</h3>
-            <p>Loop mode retries through repeated rate limits. Permission mode controls security level for unattended operation. Sleep prevention keeps your Mac awake automatically.</p>
+            <p>Loop mode retries through all agents on repeated rate limits. Permission mode controls security level for unattended operation. Sleep prevention keeps your Mac awake.</p>
           </div>
           <div class="code-block">
             <div class="code-block-header">
               <span class="code-block-label">Terminal</span>
               <button class="copy-btn" onclick="copyCode(this, 'ex2')">Copy</button>
             </div>
-            <pre id="ex2">claude-resume --loop --permission-mode auto \
+            <pre id="ex2">agent-resume --loop --permission-mode auto \
   -c <span class="string">"refactor all API endpoints to async/await"</span></pre>
           </div>
         </div>
         <div class="usage-example fade-in">
           <div class="usage-example-text">
-            <h3>Exhaustive agent fallback</h3>
-            <p>When all Claude models are rate-limited, automatically tries every installed agent (Gemini, Codex, Copilot, Aider) in order. Use <code style="font-family:var(--font-mono); font-size:12px;">-f</code> to prioritize a specific agent first.</p>
+            <h3>Custom cascade order</h3>
+            <p>Override the default tier-based ordering. Set your preferred cascade priority to match your subscriptions and workflow. Only agents you list are tried.</p>
           </div>
           <div class="code-block">
             <div class="code-block-header">
               <span class="code-block-label">Terminal</span>
               <button class="copy-btn" onclick="copyCode(this, 'ex3')">Copy</button>
             </div>
-            <pre id="ex3"><span class="comment"># Auto-detect all installed agents</span>
-claude-resume --loop -c
-
-<span class="comment"># Prioritize Gemini, then try others</span>
-claude-resume -f gemini --loop -c</pre>
+            <pre id="ex3"><span class="comment"># Gemini first, then Opus, then Codex</span>
+agent-resume --order gemini,claude-opus,codex \
+  --loop -c <span class="string">"implement search feature"</span></pre>
+          </div>
+        </div>
+        <div class="usage-example fade-in">
+          <div class="usage-example-text">
+            <h3>Single agent, no cascade</h3>
+            <p>Disable cascading to force a single agent. If it is rate-limited, waits for the reset instead of falling through to other agents.</p>
+          </div>
+          <div class="code-block">
+            <div class="code-block-header">
+              <span class="code-block-label">Terminal</span>
+              <button class="copy-btn" onclick="copyCode(this, 'ex3b')">Copy</button>
+            </div>
+            <pre id="ex3b">agent-resume --no-cascade -m opus -c</pre>
           </div>
         </div>
         <div class="usage-example fade-in">
           <div class="usage-example-text">
             <h3>Delegate to another agent</h3>
-            <p>Run a specific task on Gemini headlessly, capture the output, and inject it as context into Claude's next task. Perfect for accessing tools Claude cannot reach.</p>
+            <p>Run a specific task on any agent headlessly, capture the output, and inject it as context into the next task. Access tools one agent cannot reach through another.</p>
           </div>
           <div class="code-block">
             <div class="code-block-header">
               <span class="code-block-label">Terminal</span>
               <button class="copy-btn" onclick="copyCode(this, 'ex4')">Copy</button>
             </div>
-            <pre id="ex4">claude-resume delegate gemini \
+            <pre id="ex4">agent-resume delegate gemini \
   <span class="string">"query Stitch for user signups last 30 days"</span></pre>
           </div>
         </div>
         <div class="usage-example fade-in">
           <div class="usage-example-text">
             <h3>Process a task queue</h3>
-            <p>Feed a markdown file of tasks. Each is processed sequentially with full rate-limit handling. Completed tasks are skipped on re-run.</p>
+            <p>Feed a markdown file of tasks. Each is processed sequentially with full rate-limit handling and cross-agent cascade. Completed tasks are skipped on re-run.</p>
           </div>
           <div class="code-block">
             <div class="code-block-header">
               <span class="code-block-label">Terminal</span>
               <button class="copy-btn" onclick="copyCode(this, 'ex5')">Copy</button>
             </div>
-            <pre id="ex5">claude-resume tasks sprint.md --loop \
+            <pre id="ex5">agent-resume tasks sprint.md --loop \
   --permission-mode acceptEdits</pre>
           </div>
         </div>
         <div class="usage-example fade-in">
           <div class="usage-example-text">
-            <h3>Flag pass-through</h3>
-            <p>Forward extra flags directly to the Claude CLI. Everything after <code style="font-family:var(--font-mono); font-size:12px;">--</code> is passed through untouched. Useful for worktrees, verbose mode, or any future Claude flags.</p>
+            <h3>Check all agent statuses</h3>
+            <p>See every agent in the registry with its tier, installation status, and current availability. Quickly identify which agents are ready and which are rate-limited.</p>
           </div>
           <div class="code-block">
             <div class="code-block-header">
               <span class="code-block-label">Terminal</span>
               <button class="copy-btn" onclick="copyCode(this, 'ex6')">Copy</button>
             </div>
-            <pre id="ex6">claude-resume -c -- --worktree myfeature</pre>
-          </div>
-        </div>
-        <div class="usage-example fade-in">
-          <div class="usage-example-text">
-            <h3>Test / simulation mode</h3>
-            <p>Dry-run the countdown and resume flow without hitting real rate limits. Useful for verifying your setup works before a long run.</p>
-          </div>
-          <div class="code-block">
-            <div class="code-block-header">
-              <span class="code-block-label">Terminal</span>
-              <button class="copy-btn" onclick="copyCode(this, 'ex7')">Copy</button>
-            </div>
-            <pre id="ex7">claude-resume --test 10 -c</pre>
+            <pre id="ex6">agent-resume status</pre>
           </div>
         </div>
       </div>
@@ -1236,49 +1242,48 @@ claude-resume -f gemini --loop -c</pre>
     <div class="container">
       <div class="cascade-header">
         <p class="section-label">How It Works</p>
-        <h2 class="section-title">The cascade decision tree</h2>
-        <p class="section-desc">When you run <code style="font-family:var(--font-mono); color:var(--accent-green); font-size:14px;">claude-resume --loop -c</code>, here is the full decision flow: Claude Models &rarr; All Installed Agents &rarr; Wait &rarr; Retry.</p>
+        <h2 class="section-title">Unified smart routing + cascade</h2>
+        <p class="section-desc">When you run <code style="font-family:var(--font-mono); color:var(--accent-green); font-size:14px;">agent-resume --loop -c</code>, the script probes all installed agents and routes to the best one. If rate-limited, it cascades down the unified tier order.</p>
       </div>
       <div class="cascade-flow">
-        <!-- Step 1: Check Model -->
+        <!-- Step 1: Probe & Route -->
         <div class="cascade-step fade-in">
           <div class="cascade-track">
             <div class="cascade-node green">1</div>
             <div class="cascade-connector green"></div>
           </div>
           <div class="cascade-content">
-            <h3>Check current model <span style="color:var(--accent-green);">(Opus)</span></h3>
-            <p>Test if your primary model is available by running a quick check. If it responds, run your task immediately. Sleep prevention activates automatically in loop mode.</p>
-            <span class="tag ok">Available? Run &amp; done</span>
-            <span class="tag limited">Rate limited? Next step</span>
+            <h3>Probe all installed agents</h3>
+            <p>On startup, agent-resume probes every installed agent in tier order. Each agent is checked with its own probe command to determine availability. The first one that responds without a rate limit error is selected.</p>
+            <span class="tag tier">T1: Claude Opus, Gemini</span>
+            <span class="tag tier">T2: Sonnet, Codex</span>
+            <span class="tag tier">T3: Haiku, Copilot, Aider</span>
           </div>
         </div>
-        <!-- Step 2: Model Cascade -->
+        <!-- Step 2: Route to best -->
         <div class="cascade-step fade-in">
           <div class="cascade-track">
             <div class="cascade-node cyan">2</div>
             <div class="cascade-connector cyan"></div>
           </div>
           <div class="cascade-content">
-            <h3>Claude model cascade</h3>
-            <p>Try each cheaper model in order. Sonnet first, then Haiku. Your task continues on the first model that responds.</p>
-            <span class="tag ok">Sonnet OK? Run with Sonnet</span>
-            <span class="tag ok">Haiku OK? Run with Haiku</span>
-            <span class="tag limited">All limited? Next step</span>
+            <h3>Route to best available agent</h3>
+            <p>Your task runs on the highest-tier agent that is not rate-limited. Each agent's rate limit is detected with agent-specific patterns &mdash; Gemini looks for RESOURCE_EXHAUSTED, Codex for 429 retry limits, Copilot for rate_limited, Aider for RateLimitError.</p>
+            <span class="tag ok">Available? Run task immediately</span>
+            <span class="tag limited">Rate limited mid-task? Cascade</span>
           </div>
         </div>
-        <!-- Step 3: Exhaustive Agent Fallback -->
+        <!-- Step 3: Cascade -->
         <div class="cascade-step fade-in">
           <div class="cascade-track">
             <div class="cascade-node purple">3</div>
             <div class="cascade-connector purple"></div>
           </div>
           <div class="cascade-content">
-            <h3>All installed agents <span style="color:var(--text-muted); font-weight:400;">(exhaustive)</span></h3>
-            <p>Loop through every installed agent automatically: Gemini, Codex, Copilot, Aider. Each is tried in order. If one succeeds, the task is done. If <code style="font-family:var(--font-mono); font-size:12px;">-f</code> is set, that agent is tried first.</p>
-            <span class="tag fallback">gemini &rarr; codex &rarr; copilot &rarr; aider</span>
+            <h3>Cascade to next agent</h3>
+            <p>If the running agent hits a rate limit during execution, the task automatically moves to the next agent in the cascade. No separate "model cascade" vs "agent fallback" &mdash; one unified registry handles everything.</p>
+            <span class="tag fallback">claude-opus &rarr; gemini &rarr; claude-sonnet &rarr; codex &rarr; ...</span>
             <span class="tag ok">Any agent succeeds? Done</span>
-            <span class="tag limited">All exhausted? Next step</span>
           </div>
         </div>
         <!-- Step 4: Wait -->
@@ -1288,8 +1293,8 @@ claude-resume -f gemini --loop -c</pre>
             <div class="cascade-connector orange"></div>
           </div>
           <div class="cascade-content">
-            <h3>Wait for rate limit reset</h3>
-            <p>Parse the reset timestamp from Claude's output. Show a live HH:MM:SS countdown. Send a macOS notification when the limit lifts. Resume automatically.</p>
+            <h3>All exhausted? Wait for reset</h3>
+            <p>When every installed agent is rate-limited, parse the reset timestamp and show a live HH:MM:SS countdown. macOS notification fires when the limit lifts. Resume automatically on the first agent.</p>
             <span class="tag wait">Live countdown in terminal</span>
             <span class="tag ok">Limit lifted &rarr; resume</span>
           </div>
@@ -1301,8 +1306,8 @@ claude-resume -f gemini --loop -c</pre>
           </div>
           <div class="cascade-content">
             <h3>Retry <span style="color:var(--text-muted); font-weight:400;">(with --loop)</span></h3>
-            <p>If rate limited again during execution, the entire cascade restarts from step 1. Keeps going until your task succeeds. Signal handlers ensure clean shutdown if you interrupt.</p>
-            <span class="tag ok">Rate limited again? Go to step 1</span>
+            <p>If rate-limited again during execution, the entire routing + cascade restarts from step 1. With <code style="font-family:var(--font-mono); font-size:12px;">--order</code>, your custom priority is used instead of the default tier order. Signal handlers ensure clean shutdown on interrupt.</p>
+            <span class="tag ok">Rate limited again? Back to step 1</span>
           </div>
         </div>
       </div>
@@ -1315,7 +1320,7 @@ claude-resume -f gemini --loop -c</pre>
       <div class="inspiration-header">
         <p class="section-label">Inspiration &amp; Credits</p>
         <h2 class="section-title">Built on the shoulders of giants</h2>
-        <p class="section-desc">Each of these projects solved a piece of the puzzle. claude-resume combines the best ideas into one cohesive tool.</p>
+        <p class="section-desc">Each of these projects solved a piece of the puzzle. agent-resume combines the best ideas into one cohesive tool.</p>
       </div>
       <div class="inspiration-grid">
         <a href="https://github.com/terryso/claude-auto-resume" class="inspiration-card" target="_blank" rel="noopener">
@@ -1361,7 +1366,7 @@ claude-resume -f gemini --loop -c</pre>
   <footer>
     <div class="container">
       <p style="margin-bottom:8px;">
-        <a href="https://github.com/sarthakagrawal927/claude-resume" style="font-family:var(--font-mono); font-size:14px; color:var(--accent-green);">claude-resume v1.2.0</a>
+        <a href="https://github.com/sarthakagrawal927/agent-resume" style="font-family:var(--font-mono); font-size:14px; color:var(--accent-green);">agent-resume v2.0.0</a>
       </p>
       <p>MIT License &middot; One shell script. Zero dependencies. macOS-first.</p>
     </div>
@@ -1413,28 +1418,26 @@ claude-resume -f gemini --loop -c</pre>
 
     // ===== Hero terminal animation =====
     const terminalLines = [
-      { text: '<span class="prompt">$</span> <span class="cmd">claude-resume --loop --permission-mode auto -c</span>', delay: 0 },
+      { text: '<span class="prompt">$</span> <span class="cmd">agent-resume --loop -c</span>', delay: 0 },
       { text: '', delay: 600 },
-      { text: '<span class="dim">[claude-resume]</span> caffeinate started (sleep prevention)', delay: 800 },
-      { text: '<span class="info">[claude-resume]</span> Checking Opus availability...', delay: 1200 },
-      { text: '<span class="err">[claude-resume]</span> <span class="err">Opus rate limited.</span> Cascading...', delay: 1800 },
-      { text: '', delay: 2000 },
-      { text: '<span class="info">[claude-resume]</span> Trying Sonnet... <span class="err">limited.</span>', delay: 2200 },
-      { text: '<span class="info">[claude-resume]</span> Trying Haiku... <span class="err">limited.</span>', delay: 2600 },
-      { text: '<span class="err">[claude-resume]</span> All Claude models exhausted.', delay: 3000 },
-      { text: '', delay: 3200 },
-      { text: '<span class="purple">[claude-resume]</span> Trying <span class="purple">gemini</span>...', delay: 3400 },
-      { text: '<span class="purple">[gemini]</span> Working... <span class="dim">refactoring endpoints</span>', delay: 4000 },
-      { text: '<span class="purple">[gemini]</span> <span class="err">Failed (exit 1).</span> Trying next...', delay: 4800 },
-      { text: '<span class="purple">[claude-resume]</span> Trying <span class="purple">codex</span>...', delay: 5200 },
-      { text: '<span class="purple">[codex]</span> Working... <span class="dim">refactoring endpoints</span>', delay: 5800 },
-      { text: '<span class="purple">[codex]</span> <span class="ok">Done.</span>', delay: 6400 },
-      { text: '', delay: 6600 },
-      { text: '<span class="warn">[claude-resume]</span> All agents exhausted. Waiting for reset...', delay: 6800 },
-      { text: '<span class="warn">[claude-resume]</span> <span class="warn">00:00:03</span> remaining', delay: 7400 },
+      { text: '<span class="dim">[agent-resume]</span> caffeinate started (sleep prevention)', delay: 800 },
+      { text: '<span class="info">[agent-resume]</span> Finding best available agent...', delay: 1200 },
+      { text: '', delay: 1400 },
+      { text: '<span class="info">[agent-resume]</span> Probing <span class="ok">claude-opus</span> (T1)... <span class="err">limited</span>', delay: 1800 },
+      { text: '<span class="info">[agent-resume]</span> Probing <span class="ok">gemini</span> (T1)... <span class="err">RESOURCE_EXHAUSTED</span>', delay: 2400 },
+      { text: '<span class="info">[agent-resume]</span> Probing <span class="info">claude-sonnet</span> (T2)... <span class="err">limited</span>', delay: 3000 },
+      { text: '<span class="info">[agent-resume]</span> Probing <span class="info">codex</span> (T2)... <span class="ok">available</span>', delay: 3600 },
+      { text: '', delay: 3800 },
+      { text: '<span class="ok">[agent-resume]</span> Routing to <span class="ok">codex</span>', delay: 4000 },
+      { text: '<span class="purple">[codex]</span> Working... <span class="dim">refactoring endpoints</span>', delay: 4600 },
+      { text: '<span class="purple">[codex]</span> <span class="err">exceeded retry limit 429</span>', delay: 5400 },
+      { text: '', delay: 5600 },
+      { text: '<span class="warn">[agent-resume]</span> codex hit rate limit. Cascading...', delay: 5800 },
+      { text: '<span class="info">[agent-resume]</span> Probing <span class="dim">claude-haiku</span> (T3)... <span class="ok">available</span>', delay: 6400 },
+      { text: '<span class="ok">[agent-resume]</span> Routing to <span class="ok">claude-haiku</span>', delay: 6800 },
+      { text: '<span class="purple">[claude-haiku]</span> Working... <span class="dim">refactoring endpoints</span>', delay: 7400 },
       { text: '', delay: 8000 },
-      { text: '<span class="ok">[claude-resume]</span> <span class="ok">Rate limit lifted!</span> Resuming on Opus.', delay: 8200 },
-      { text: '<span class="ok">[claude-resume]</span> <span class="ok">Task completed successfully.</span>', delay: 9000 },
+      { text: '<span class="ok">[agent-resume]</span> <span class="ok">Task completed successfully.</span>', delay: 8200 },
     ];
 
     const terminalBody = document.getElementById('heroTerminal');
