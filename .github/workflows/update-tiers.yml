@@ -1,0 +1,176 @@
+name: Update Agent Tiers
+
+on:
+  schedule:
+    - cron: '0 9 1,15 * *'  # 9 AM UTC on 1st and 15th of each month
+  workflow_dispatch: {}       # Manual trigger
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-tiers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq jq curl python3
+          pip install pyyaml
+
+      - name: Fetch Aider benchmark data
+        run: |
+          curl -sL "https://raw.githubusercontent.com/Aider-AI/aider/main/aider/website/_data/polyglot_leaderboard.yml" \
+            -o /tmp/leaderboard.yml
+
+      - name: Parse benchmarks and update tiers.json
+        run: |
+          python3 << 'PYTHON'
+          import json
+          import yaml
+          import re
+          from datetime import date
+
+          # Load current tiers
+          with open("tiers.json") as f:
+              tiers = json.load(f)
+
+          # Load benchmark data
+          with open("/tmp/leaderboard.yml") as f:
+              benchmarks = yaml.safe_load(f)
+
+          # Map our agent names to benchmark model patterns
+          # Each pattern tries to match the best variant of that model family
+          MODEL_MAP = {
+              "claude-opus": [
+                  r"claude-opus-4",
+                  r"claude-opus-3",
+              ],
+              "gemini": [
+                  r"gemini-2\.5-pro",
+                  r"gemini-3",
+              ],
+              "claude-sonnet": [
+                  r"claude-sonnet-4",
+                  r"claude-3-7-sonnet",
+                  r"claude-3-5-sonnet",
+              ],
+              "codex": [
+                  r"gpt-5",
+                  r"gpt-4\.1",
+                  r"o4-mini",
+                  r"o3",
+              ],
+              "claude-haiku": [
+                  r"claude.*haiku",
+              ],
+          }
+
+          def best_score(patterns, data):
+              """Find the highest pass_rate_2 for any model matching the patterns."""
+              best = None
+              best_model = None
+              for entry in data:
+                  model = entry.get("model", "")
+                  score = entry.get("pass_rate_2")
+                  if score is None:
+                      continue
+                  for pat in patterns:
+                      if re.search(pat, model, re.IGNORECASE):
+                          if best is None or score > best:
+                              best = score
+                              best_model = model
+                          break
+              return best, best_model
+
+          # Update scores
+          changed = False
+          for agent in tiers["agents"]:
+              name = agent["name"]
+              if name not in MODEL_MAP:
+                  continue
+              score, model = best_score(MODEL_MAP[name], benchmarks)
+              if score is not None:
+                  old_score = agent.get("score")
+                  if old_score != score:
+                      print(f"  {name}: {old_score} -> {score} ({model})")
+                      agent["score"] = score
+                      agent["benchmark_model"] = model
+                      changed = True
+
+          if not changed:
+              print("No score changes detected.")
+          else:
+              # Re-sort by score descending, assign tiers
+              scored = [a for a in tiers["agents"] if a.get("score") is not None]
+              unscored = [a for a in tiers["agents"] if a.get("score") is None]
+              scored.sort(key=lambda a: a["score"], reverse=True)
+
+              # Assign tiers: top 30% = T1, middle 40% = T2, bottom 30% = T3
+              n = len(scored)
+              for i, agent in enumerate(scored):
+                  if i < n * 0.3:
+                      agent["tier"] = 1
+                  elif i < n * 0.7:
+                      agent["tier"] = 2
+                  else:
+                      agent["tier"] = 3
+
+              # Unscored agents stay T3
+              for a in unscored:
+                  a["tier"] = 3
+
+              tiers["agents"] = scored + unscored
+              tiers["updated"] = date.today().isoformat()
+
+              with open("tiers.json", "w") as f:
+                  json.dump(tiers, f, indent=2)
+                  f.write("\n")
+
+              print(f"Updated tiers.json with {len(scored)} scored agents.")
+
+              # Print new order
+              print("\nNew tier order:")
+              for a in tiers["agents"]:
+                  score_str = f"{a['score']}%" if a.get('score') else "n/a"
+                  print(f"  T{a['tier']} {a['name']}: {score_str}")
+          PYTHON
+
+      - name: Check for changes
+        id: check
+        run: |
+          if git diff --quiet tiers.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create PR
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="auto/update-tiers-$(date +%Y%m%d)"
+          git checkout -b "$BRANCH"
+          git add tiers.json
+          git commit -m "Update agent tiers from Aider benchmarks $(date +%Y-%m-%d)"
+          git push origin "$BRANCH"
+          gh pr create \
+            --title "Update agent tiers from benchmarks" \
+            --body "$(cat <<'EOF'
+          ## Auto-generated tier update
+
+          Updated agent quality tiers based on latest [Aider polyglot benchmark](https://aider.chat/docs/leaderboards/) data.
+
+          Review the score changes and new tier assignments before merging.
+
+          Generated by the `update-tiers` workflow.
+          EOF
+          )" \
+            --base main \
+            --head "$BRANCH"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -36,31 +36,58 @@ USER_ORDER=()
 # ============================================================================
 # Format: "tier|name|cli_cmd|probe_cmd|headless_flag|rate_limit_patterns"
 #
-# tier: 1=best, 2=mid, 3=budget (used for default routing order)
-# cli_cmd: the CLI binary name
-# probe_cmd: command to check if available + not rate-limited (empty = just check installation)
-# headless_flag: flag to run non-interactively with a prompt
-# rate_limit_patterns: pipe-separated grep -iE patterns for rate limit detection
-#
-# Default order interleaves vendors by quality tier.
+# Loaded from tiers.json if available, otherwise uses hardcoded defaults.
+# tiers.json is auto-updated by GitHub Action every 15 days from Aider benchmarks.
 
-AGENT_REGISTRY=(
-  "1|claude-opus|claude|claude --model opus -p check|--model opus -p|usage limit.*reached|limit reached.*resets|hit your limit|out of.*(extra )?usage|rate.?limit"
-  "1|gemini|gemini|gemini -p check|-p|RESOURCE_EXHAUSTED|RATE_LIMIT_EXCEEDED|QUOTA_EXHAUSTED|exhausted.*quota|quota.*exceeded|rate.?limit.*exceeded|429"
-  "2|claude-sonnet|claude|claude --model sonnet -p check|--model sonnet -p|usage limit.*reached|limit reached.*resets|hit your limit|out of.*(extra )?usage|rate.?limit"
-  "2|codex|codex|codex --version|exec|exceeded retry limit.*429|rate_limit_exceeded|429 Too Many|insufficient_quota"
-  "3|claude-haiku|claude|claude --model haiku -p check|--model haiku -p|usage limit.*reached|limit reached.*resets|hit your limit|out of.*(extra )?usage|rate.?limit"
-  "3|copilot|copilot|copilot --version|-p|rate_limited|you.ve exceeded|you have been rate-limited|Copilot token usage"
-  "3|aider|aider|aider --version|--message --yes|RateLimitError|Retrying in [0-9]|rate_limit_error|429.*Too Many|exceeded.*quota"
-)
+AGENT_REGISTRY=()
+
+# Resolve the directory this script lives in (follows symlinks)
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)"
+
+load_registry() {
+  local tiers_file="$SCRIPT_DIR/tiers.json"
+
+  if [ -f "$tiers_file" ] && command -v jq &>/dev/null; then
+    debug "Loading agent registry from $tiers_file"
+    local count
+    count=$(jq '.agents | length' "$tiers_file")
+
+    for ((i=0; i<count; i++)); do
+      local tier name cli probe headless patterns
+      tier=$(jq -r ".agents[$i].tier" "$tiers_file")
+      name=$(jq -r ".agents[$i].name" "$tiers_file")
+      cli=$(jq -r ".agents[$i].cli" "$tiers_file")
+      probe=$(jq -r ".agents[$i].probe" "$tiers_file")
+      headless=$(jq -r ".agents[$i].headless" "$tiers_file")
+      patterns=$(jq -r ".agents[$i].patterns" "$tiers_file")
+      AGENT_REGISTRY+=("${tier}|${name}|${cli}|${probe}|${headless}|${patterns}")
+    done
+    debug "Loaded ${#AGENT_REGISTRY[@]} agents from tiers.json (updated: $(jq -r '.updated' "$tiers_file"))"
+    return
+  fi
+
+  # Fallback: hardcoded defaults
+  debug "tiers.json not found or jq missing — using hardcoded registry"
+  AGENT_REGISTRY=(
+    "1|claude-opus|claude|claude --model opus -p check|--model opus -p|usage limit.*reached|limit reached.*resets|hit your limit|out of.*(extra )?usage|rate.?limit"
+    "1|gemini|gemini|gemini -p check|-p|RESOURCE_EXHAUSTED|RATE_LIMIT_EXCEEDED|QUOTA_EXHAUSTED|exhausted.*quota|quota.*exceeded|rate.?limit.*exceeded|429"
+    "2|claude-sonnet|claude|claude --model sonnet -p check|--model sonnet -p|usage limit.*reached|limit reached.*resets|hit your limit|out of.*(extra )?usage|rate.?limit"
+    "2|codex|codex|codex --version|exec|exceeded retry limit.*429|rate_limit_exceeded|429 Too Many|insufficient_quota"
+    "3|claude-haiku|claude|claude --model haiku -p check|--model haiku -p|usage limit.*reached|limit reached.*resets|hit your limit|out of.*(extra )?usage|rate.?limit"
+    "3|copilot|copilot|copilot --version|-p|rate_limited|you.ve exceeded|you have been rate-limited|Copilot token usage"
+    "3|aider|aider|aider --version|--message --yes|RateLimitError|Retrying in [0-9]|rate_limit_error|429.*Too Many|exceeded.*quota"
+  )
+}
 
 # ============================================================================
-# Helpers
+# Helpers (defined early — needed by load_registry)
 # ============================================================================
 
 die()    { echo "Error: $1" >&2; exit "${2:-1}"; }
 info()   { echo ":: $1"; }
 debug()  { [ "${DEBUG:-}" = "1" ] && echo "[debug] $1" >&2 || true; }
+
+load_registry
 
 notify() {
   local msg="$1"

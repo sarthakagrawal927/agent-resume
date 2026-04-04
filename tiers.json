@@ -1,0 +1,77 @@
+{
+  "updated": "2026-04-04",
+  "source": "https://aider.chat/docs/leaderboards/",
+  "data_url": "https://raw.githubusercontent.com/Aider-AI/aider/main/aider/website/_data/polyglot_leaderboard.yml",
+  "agents": [
+    {
+      "tier": 1,
+      "name": "claude-opus",
+      "cli": "claude",
+      "probe": "claude --model opus -p check",
+      "headless": "--model opus -p",
+      "patterns": "usage limit.*reached|limit reached.*resets|hit your limit|out of.*(extra )?usage|rate.?limit",
+      "score": 72.0,
+      "benchmark_model": "claude-opus-4-20250514"
+    },
+    {
+      "tier": 1,
+      "name": "gemini",
+      "cli": "gemini",
+      "probe": "gemini -p check",
+      "headless": "-p",
+      "patterns": "RESOURCE_EXHAUSTED|RATE_LIMIT_EXCEEDED|QUOTA_EXHAUSTED|exhausted.*quota|quota.*exceeded|rate.?limit.*exceeded|429",
+      "score": 83.1,
+      "benchmark_model": "gemini-2.5-pro-preview-06-05"
+    },
+    {
+      "tier": 2,
+      "name": "claude-sonnet",
+      "cli": "claude",
+      "probe": "claude --model sonnet -p check",
+      "headless": "--model sonnet -p",
+      "patterns": "usage limit.*reached|limit reached.*resets|hit your limit|out of.*(extra )?usage|rate.?limit",
+      "score": 64.9,
+      "benchmark_model": "claude-3-7-sonnet-20250219"
+    },
+    {
+      "tier": 2,
+      "name": "codex",
+      "cli": "codex",
+      "probe": "codex --version",
+      "headless": "exec",
+      "patterns": "exceeded retry limit.*429|rate_limit_exceeded|429 Too Many|insufficient_quota",
+      "score": 52.4,
+      "benchmark_model": "gpt-4.1"
+    },
+    {
+      "tier": 3,
+      "name": "claude-haiku",
+      "cli": "claude",
+      "probe": "claude --model haiku -p check",
+      "headless": "--model haiku -p",
+      "patterns": "usage limit.*reached|limit reached.*resets|hit your limit|out of.*(extra )?usage|rate.?limit",
+      "score": 28.0,
+      "benchmark_model": "claude-3-5-haiku-20241022"
+    },
+    {
+      "tier": 3,
+      "name": "copilot",
+      "cli": "copilot",
+      "probe": "copilot --version",
+      "headless": "-p",
+      "patterns": "rate_limited|you.ve exceeded|you have been rate-limited|Copilot token usage",
+      "score": null,
+      "benchmark_model": null
+    },
+    {
+      "tier": 3,
+      "name": "aider",
+      "cli": "aider",
+      "probe": "aider --version",
+      "headless": "--message --yes",
+      "patterns": "RateLimitError|Retrying in [0-9]|rate_limit_error|429.*Too Many|exceeded.*quota",
+      "score": null,
+      "benchmark_model": null
+    }
+  ]
+}
