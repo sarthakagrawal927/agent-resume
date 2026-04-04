@@ -154,6 +154,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           BRANCH="auto/update-tiers-$(date +%Y%m%d)"
+          git fetch origin "$BRANCH" 2>/dev/null && git push origin --delete "$BRANCH" 2>/dev/null || true
           git checkout -b "$BRANCH"
           git add tiers.json
           git commit -m "Update agent tiers from Aider benchmarks $(date +%Y-%m-%d)"
