@@ -5,7 +5,7 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SCRIPT="$SCRIPT_DIR/claude-resume.sh"
+SCRIPT="$SCRIPT_DIR/agent-resume.sh"
 
 # ============================================================================
 # Test Framework
@@ -110,32 +110,29 @@ source_functions() {
   PROMPT=""
   CONTINUE=""
   RESUME_SESSION=""
-  FALLBACK_TOOL=""
   MODEL=""
   CASCADE=""
   LOOP=""
   SKIP_PERMS=""
+  PERM_MODE=""
   TEST_SECS=""
   TASK_FILE=""
   SUBCOMMAND=""
   DELEGATE_AGENT=""
   DELEGATE_TASK=""
   DELEGATE_CONTEXT=""
-  PROFILES=()
   LOG_FILE=""
-  PERM_MODE=""
-  PASS_THROUGH_FLAGS=()
-  FALLBACK_AGENTS=()
   CAFFEINATE_PID=""
-  CASCADE_MODELS=()
-  KNOWN_AGENTS=()
+  PASS_THROUGH_FLAGS=()
+  USER_ORDER=()
+  AGENT_REGISTRY=()
 
   TEST_MODE=1 source "$SCRIPT"
 }
 
 source_functions
 
-echo "claude-resume test suite"
+echo "agent-resume test suite"
 echo "========================"
 
 # ============================================================================
@@ -150,7 +147,7 @@ assert_exit "--help exits 0" 0 bash "$SCRIPT" --help
 # --version prints version and exits 0
 out=$(bash "$SCRIPT" --version 2>&1)
 assert_exit "--version exits 0" 0 bash "$SCRIPT" --version
-assert_contains "--version prints version string" "$out" "claude-resume v"
+assert_contains "--version prints version string" "$out" "agent-resume v"
 
 # Unknown flag errors (exit non-zero)
 assert_exit "unknown flag --bogus errors" 1 bash "$SCRIPT" --bogus
@@ -194,19 +191,19 @@ out=$(bash -c '
 ')
 assert_eq "-m sets MODEL" "opus" "$out"
 
-# -P adds profiles (repeatable)
+# --order sets custom cascade order
 out=$(bash -c '
   TEST_MODE=1 source "'"$SCRIPT"'"
-  set -- -P work -P personal
+  set -- --order gemini,claude-opus
   while [[ $# -gt 0 ]]; do
     case $1 in
-      -P|--profile) PROFILES+=("$2"); shift 2 ;;
+      --order) IFS="," read -ra USER_ORDER <<< "$2"; shift 2 ;;
       *) shift ;;
     esac
   done
-  echo "${PROFILES[*]}"
+  echo "${USER_ORDER[*]}"
 ')
-assert_eq "-P adds profiles (repeatable)" "work personal" "$out"
+assert_eq "--order sets USER_ORDER" "gemini claude-opus" "$out"
 
 # --no-cascade disables cascade
 out=$(bash -c '
@@ -310,41 +307,28 @@ assert_eq "no time info returns exit 1" "1" "$ret"
 
 group "is_rate_limited()"
 
-# Positive cases — all known rate limit formats
-is_rate_limited "Claude AI usage limit reached"
-assert_eq "detects 'Claude AI usage limit reached'" "0" "$?"
-
-is_rate_limited "Your limit reached, resets 3pm"
-assert_eq "detects 'limit reached...resets'" "0" "$?"
-
-is_rate_limited "You've hit your limit, resets 3pm (America/New_York)"
-assert_eq "detects 'hit your limit'" "0" "$?"
-
-is_rate_limited "You're out of extra usage"
-assert_eq "detects 'out of extra usage'" "0" "$?"
-
-is_rate_limited "You're out of usage credits"
-assert_eq "detects 'out of usage'" "0" "$?"
-
-is_rate_limited "rate limit exceeded"
-assert_eq "detects 'rate limit exceeded'" "0" "$?"
-
-is_rate_limited "Your usage limit has been reached, resets at 3pm"
-assert_eq "detects 'usage limit...resets'" "0" "$?"
-
-is_rate_limited "Rate-limit hit"
-assert_eq "detects 'Rate-limit' (hyphenated)" "0" "$?"
-
-# Negative cases — normal output should NOT trigger
+# All rate limit checks need set +e since is_rate_limited returns non-zero on no match
 set +e
-is_rate_limited "Hello, how can I help you today?"
-r1=$?
-is_rate_limited "Task completed successfully"
-r2=$?
-is_rate_limited "I've finished refactoring the module"
-r3=$?
-is_rate_limited ""
-r4=$?
+
+# Positive cases — all known rate limit formats
+is_rate_limited "Claude AI usage limit reached"; assert_eq "detects 'Claude AI usage limit reached'" "0" "$?"
+is_rate_limited "Your limit reached, resets 3pm"; assert_eq "detects 'limit reached...resets'" "0" "$?"
+is_rate_limited "You've hit your limit, resets 3pm (America/New_York)"; assert_eq "detects 'hit your limit'" "0" "$?"
+is_rate_limited "You're out of extra usage"; assert_eq "detects 'out of extra usage'" "0" "$?"
+is_rate_limited "You're out of usage credits"; assert_eq "detects 'out of usage'" "0" "$?"
+is_rate_limited "rate limit exceeded"; assert_eq "detects 'rate limit exceeded'" "0" "$?"
+is_rate_limited "Your usage limit has been reached, resets at 3pm"; assert_eq "detects 'usage limit...resets'" "0" "$?"
+is_rate_limited "Rate-limit hit"; assert_eq "detects 'Rate-limit' (hyphenated)" "0" "$?"
+is_rate_limited "Error 429: too many requests"; assert_eq "detects '429 too many requests'" "0" "$?"
+is_rate_limited "quota exceeded for project"; assert_eq "detects 'quota exceeded'" "0" "$?"
+is_rate_limited "RESOURCE_EXHAUSTED"; assert_eq "detects 'resource exhausted'" "0" "$?"
+
+# Negative cases
+is_rate_limited "Hello, how can I help you today?"; r1=$?
+is_rate_limited "Task completed successfully"; r2=$?
+is_rate_limited "I've finished refactoring the module"; r3=$?
+is_rate_limited ""; r4=$?
+
 set -e
 
 assert_eq "normal output 'Hello...' not rate limited" "1" "$r1"
@@ -589,11 +573,10 @@ set -e
 assert_eq "tasks with no file exits non-zero" "true" "$([ $ret -ne 0 ] && echo true || echo false)"
 
 # VERSION is set correctly
-assert_eq "VERSION is set" "1.2.0" "$VERSION"
+assert_eq "VERSION is set" "2.0.0" "$VERSION"
 
-# CASCADE_MODELS default values
-assert_eq "CASCADE_MODELS has sonnet" "sonnet" "${CASCADE_MODELS[0]}"
-assert_eq "CASCADE_MODELS has haiku" "haiku" "${CASCADE_MODELS[1]}"
+# AGENT_REGISTRY is populated
+assert_eq "AGENT_REGISTRY is not empty" "true" "$([ ${#AGENT_REGISTRY[@]} -gt 0 ] && echo true || echo false)"
 
 # CONTINUE default is false
 source_functions
@@ -645,41 +628,37 @@ assert_eq "die with custom exit code" "42" "$ret"
 out=$(info "hello world")
 assert_eq "info prints with :: prefix" ":: hello world" "$out"
 
-# build_claude_cmd with defaults
-MODEL=""
-SKIP_PERMS=false
-RESUME_SESSION=""
-CONTINUE=false
-build_claude_cmd ""
-assert_eq "build_claude_cmd default is just 'claude'" "claude" "${CLAUDE_CMD[*]}"
+# Agent registry parsing
+group "Agent registry"
 
-# build_claude_cmd with -c
-CONTINUE=true
-build_claude_cmd ""
-assert_contains "build_claude_cmd with CONTINUE includes -c" "${CLAUDE_CMD[*]}" "-c"
-CONTINUE=false
+# Test reg_field helpers
+entry="${AGENT_REGISTRY[0]}"
+assert_eq "reg_tier returns tier" "1" "$(reg_tier "$entry")"
+assert_eq "reg_name returns name" "claude-opus" "$(reg_name "$entry")"
+assert_eq "reg_cli returns cli" "claude" "$(reg_cli "$entry")"
 
-# build_claude_cmd with resume session
-RESUME_SESSION="sess123"
-build_claude_cmd ""
-assert_contains "build_claude_cmd with RESUME includes --resume" "${CLAUDE_CMD[*]}" "--resume sess123"
-RESUME_SESSION=""
+# Test is_agent_rate_limited with Claude patterns
+assert_eq "Claude rate limit detected" "0" "$(is_agent_rate_limited "Claude AI usage limit reached" "$entry" && echo 0 || echo 1)"
+assert_eq "Normal output not rate limited" "1" "$(is_agent_rate_limited "Hello world" "$entry" && echo 0 || echo 1)"
 
-# build_claude_cmd with model override
-build_claude_cmd "sonnet"
-assert_contains "build_claude_cmd with model override includes --model" "${CLAUDE_CMD[*]}" "--model sonnet"
+# Test Gemini entry
+gemini_entry="${AGENT_REGISTRY[1]}"
+assert_eq "Gemini entry name" "gemini" "$(reg_name "$gemini_entry")"
+assert_eq "Gemini tier is 1" "1" "$(reg_tier "$gemini_entry")"
+assert_eq "Gemini rate limit: 429" "0" "$(is_agent_rate_limited "Error 429: too many requests" "$gemini_entry" && echo 0 || echo 1)"
+assert_eq "Gemini rate limit: quota" "0" "$(is_agent_rate_limited "quota exceeded for project" "$gemini_entry" && echo 0 || echo 1)"
 
-# build_claude_cmd with MODEL global (no override)
-MODEL="haiku"
-build_claude_cmd ""
-assert_contains "build_claude_cmd with MODEL global includes --model" "${CLAUDE_CMD[*]}" "--model haiku"
-MODEL=""
+# Test cascade order with default (all entries)
+count=$(get_cascade_order | wc -l | tr -d ' ')
+assert_eq "default cascade has all entries" "${#AGENT_REGISTRY[@]}" "$count"
 
-# build_claude_cmd with skip permissions
-SKIP_PERMS=true
-build_claude_cmd ""
-assert_contains "build_claude_cmd with SKIP_PERMS includes flag" "${CLAUDE_CMD[*]}" "--dangerously-skip-permissions"
-SKIP_PERMS=false
+# Test custom order
+USER_ORDER=("gemini" "claude-opus")
+count=$(get_cascade_order | wc -l | tr -d ' ')
+assert_eq "custom order respects user selection" "2" "$count"
+first_name=$(get_cascade_order | head -1 | cut -d'|' -f2)
+assert_eq "custom order puts gemini first" "gemini" "$first_name"
+USER_ORDER=()
 
 # ============================================================================
 # Summary
