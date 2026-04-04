@@ -7,6 +7,7 @@
 set -euo pipefail
 
 VERSION="2.0.0"
+PROBE_TIMEOUT=15
 TIMEOUT_SECS=300
 BUFFER_SECS=10
 RATE_LIMIT_EXIT=2
@@ -87,6 +88,33 @@ die()    { echo "Error: $1" >&2; exit "${2:-1}"; }
 info()   { echo ":: $1"; }
 debug()  { [ "${DEBUG:-}" = "1" ] && echo "[debug] $1" >&2 || true; }
 
+# Spinner animation — call start_spinner "message", then stop_spinner when done
+SPINNER_PID=""
+start_spinner() {
+  local msg="$1"
+  local frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+  (
+    local i=0
+    while true; do
+      printf "\r  ${frames[$((i % ${#frames[@]}))]} %s " "$msg"
+      i=$((i + 1))
+      sleep 0.1
+    done
+  ) &
+  SPINNER_PID=$!
+}
+
+stop_spinner() {
+  local result="${1:-}"
+  if [ -n "$SPINNER_PID" ]; then
+    kill "$SPINNER_PID" 2>/dev/null || true
+    wait "$SPINNER_PID" 2>/dev/null || true
+    SPINNER_PID=""
+    printf "\r\033[K"  # clear the spinner line
+  fi
+  [ -n "$result" ] && echo "  $result" || true
+}
+
 load_registry
 
 notify() {
@@ -116,6 +144,7 @@ stop_caffeinate() {
 
 cleanup() {
   local exit_code=$?
+  stop_spinner
   stop_caffeinate
   log_event "SESSION_END"
   exit $exit_code
@@ -204,7 +233,7 @@ probe_agent() {
   debug "Probing $name: $probe_cmd"
 
   local output
-  output=$(run_timeout "$TIMEOUT_SECS" $probe_cmd 2>&1) || true
+  output=$(run_timeout "$PROBE_TIMEOUT" $probe_cmd 2>&1) || true
 
   if is_agent_rate_limited "$output" "$entry"; then
     # Try to parse reset time (Claude-specific, others just return "limited")
@@ -498,10 +527,12 @@ run_once() {
   # Step 1: Route to best available agent
   info "Finding best available agent..."
   for entry in "${cascade_entries[@]}"; do
-    local name
+    local name tier
     name=$(reg_name "$entry")
+    tier=$(reg_tier "$entry")
     debug "Checking $name..."
 
+    start_spinner "Probing $name [T${tier}]..."
     local status
     status=$(probe_agent "$entry")
     debug "$name: $status"
@@ -511,6 +542,7 @@ run_once() {
     [ -z "$first_status" ] && first_status="$status"
 
     if [ "$status" = "ok" ]; then
+      stop_spinner "✓ $name [T${tier}] — available"
       info "Routing to $name"
       run_agent "$entry" "$PROMPT"
       local ret=$?
@@ -525,9 +557,11 @@ run_once() {
 
     # Rate limited — cascade if enabled
     if [ "$CASCADE" = true ]; then
+      stop_spinner "✗ $name [T${tier}] — rate limited"
       info "$name is rate limited. Trying next..."
       continue
     else
+      stop_spinner "✗ $name [T${tier}] — rate limited"
       info "$name is rate limited. Cascade disabled (--no-cascade)."
       wait_for_reset "$status"
       run_agent "$entry" "$PROMPT"
@@ -561,21 +595,21 @@ show_status() {
     local tier
     tier=$(reg_tier "$entry")
 
-    printf "  [T%s] %-16s " "$tier" "$name"
-
     if ! command -v "$cli" &>/dev/null; then
-      echo "not installed"
+      printf "  [T%s] %-16s %s\n" "$tier" "$name" "not installed"
       continue
     fi
 
+    start_spinner "[T${tier}] ${name} — probing..."
     local status
     status=$(probe_agent "$entry")
+    stop_spinner
     if [ "$status" = "ok" ]; then
-      echo "available"
+      printf "  [T%s] %-16s %s\n" "$tier" "$name" "✓ available"
     elif [[ "$status" == limited\|* ]]; then
-      echo "limited — resets $(fmt_time "${s#limited|}")"
+      printf "  [T%s] %-16s %s\n" "$tier" "$name" "✗ limited — resets $(fmt_time "${status#limited|}")"
     else
-      echo "limited"
+      printf "  [T%s] %-16s %s\n" "$tier" "$name" "✗ limited"
     fi
   done < <(get_cascade_order)
 

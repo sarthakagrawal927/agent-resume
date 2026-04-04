@@ -164,6 +164,12 @@ agent-resume -c -- --worktree myfeature --name "overnight-refactor"
 ## Installation
 
 ```bash
+curl -fsSL https://raw.githubusercontent.com/sarthakagrawal927/agent-resume/main/install.sh | bash
+```
+
+Or manually:
+
+```bash
 git clone https://github.com/sarthakagrawal927/agent-resume.git
 cd agent-resume
 chmod +x agent-resume.sh
@@ -273,10 +279,7 @@ Every tool above is Claude-specific. agent-resume treats **all AI coding agents 
 
 ## Roadmap
 
-- [ ] **Cost tracking** — parse costs from `--output-format stream-json`, enforce budget caps
-- [ ] **Duration limits** — `--max-duration 2h` for time-boxed execution
 - [ ] **Completion signals** — detect when the agent says "done" and stop the loop
-- [ ] **Per-project config** — `.agent-resume.yml` for project-specific agent order and settings
 - [ ] **Homebrew formula** — `brew install agent-resume`
 
 ---
