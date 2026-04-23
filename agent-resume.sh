@@ -467,6 +467,10 @@ Task: ${prompt}"
     cmd+=("$cli")
     read -ra headless_parts <<< "$headless"
     cmd+=("${headless_parts[@]}")
+    # Codex refuses to run outside a git repo without explicit opt-out
+    if [ "$cli" = "codex" ]; then
+      cmd+=("--skip-git-repo-check")
+    fi
     cmd+=("$effective_prompt")
   fi
 
