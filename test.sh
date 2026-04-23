@@ -631,18 +631,30 @@ assert_eq "info prints with :: prefix" ":: hello world" "$out"
 # Agent registry parsing
 group "Agent registry"
 
-# Test reg_field helpers
-entry="${AGENT_REGISTRY[0]}"
-assert_eq "reg_tier returns tier" "1" "$(reg_tier "$entry")"
+# Look up registry entries by name (index-agnostic — tier order shifts with benchmark updates)
+find_entry() {
+  local target="$1"
+  for e in "${AGENT_REGISTRY[@]}"; do
+    if [ "$(reg_name "$e")" = "$target" ]; then
+      echo "$e"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Test reg_field helpers on Claude Opus entry
+entry="$(find_entry claude-opus)"
 assert_eq "reg_name returns name" "claude-opus" "$(reg_name "$entry")"
 assert_eq "reg_cli returns cli" "claude" "$(reg_cli "$entry")"
+assert_match "reg_tier returns numeric tier" "$(reg_tier "$entry")" "^[0-9]+$"
 
 # Test is_agent_rate_limited with Claude patterns
 assert_eq "Claude rate limit detected" "0" "$(is_agent_rate_limited "Claude AI usage limit reached" "$entry" && echo 0 || echo 1)"
 assert_eq "Normal output not rate limited" "1" "$(is_agent_rate_limited "Hello world" "$entry" && echo 0 || echo 1)"
 
-# Test Gemini entry
-gemini_entry="${AGENT_REGISTRY[1]}"
+# Test Gemini entry (looked up by name)
+gemini_entry="$(find_entry gemini)"
 assert_eq "Gemini entry name" "gemini" "$(reg_name "$gemini_entry")"
 assert_eq "Gemini tier is 1" "1" "$(reg_tier "$gemini_entry")"
 assert_eq "Gemini rate limit: 429" "0" "$(is_agent_rate_limited "Error 429: too many requests" "$gemini_entry" && echo 0 || echo 1)"
@@ -656,7 +668,7 @@ assert_eq "default cascade has all entries" "${#AGENT_REGISTRY[@]}" "$count"
 USER_ORDER=("gemini" "claude-opus")
 count=$(get_cascade_order | wc -l | tr -d ' ')
 assert_eq "custom order respects user selection" "2" "$count"
-first_name=$(get_cascade_order | head -1 | cut -d'|' -f2)
+first_name=$(get_cascade_order | awk -F'|' 'NR==1{n=$2} END{print n}')
 assert_eq "custom order puts gemini first" "gemini" "$first_name"
 USER_ORDER=()
 
