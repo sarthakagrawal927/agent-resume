@@ -230,6 +230,11 @@ probe_agent() {
   local name
   name=$(reg_name "$entry")
 
+  # Claude refuses headless in untrusted dirs — inject --skip-git-repo-check
+  case "$probe_cmd" in
+    claude*) probe_cmd="${probe_cmd/claude/claude --skip-git-repo-check}" ;;
+  esac
+
   debug "Probing $name: $probe_cmd"
 
   local output
@@ -438,6 +443,8 @@ Task: ${prompt}"
 
   if [ "$cli" = "claude" ]; then
     cmd+=("claude")
+    # Claude refuses headless in untrusted dirs — auto-skip the check
+    cmd+=("--skip-git-repo-check")
     # Claude-specific flags
     if [ -n "$PERM_MODE" ]; then
       cmd+=("--permission-mode" "$PERM_MODE")
