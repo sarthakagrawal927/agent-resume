@@ -29,4 +29,7 @@ curl -fsSL "https://raw.githubusercontent.com/$REPO/main/tiers.json" -o "$SCRIPT
 
 echo ""
 echo "Installed: $(agent-resume --version)"
-echo "Run: agent-resume -c"
+echo "Quickstart:"
+echo "  agent-resume \"fix the auth bug\""
+echo "  agent-resume queue              # solve open GitHub issues"
+echo "  agent-resume status"
